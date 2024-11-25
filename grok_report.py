@@ -2,7 +2,6 @@ import json
 
 import requests
 
-from all_settings import GROK_API_URL, MODEL
 from especific_commit_dataset import EspecificCommit
 from playbooks import FINAL_PLAYBOOK, INITIAL_PLAYBOOK
 
@@ -26,6 +25,8 @@ class GrokReport:
         self.empresa_url = empresa_url
         self.plataforma = plataforma
         self.git_token = git_token
+        self.model = "grok-beta"
+        self.grok_api_url = "https://api.x.ai/v1/chat/completions"
         self.headers = {
             "Authorization": f"Bearer {grok_api_key}",
             "Content-Type": "application/json",
@@ -47,7 +48,7 @@ class GrokReport:
                         "content": f"{self._code_analysis_response}",
                     },
                 ],
-                "model": MODEL,
+                "model": self.model,
                 "stream": False,
                 "temperature": 0,
             }
@@ -55,7 +56,7 @@ class GrokReport:
 
         print(f"Buscando o relatório final...")
         final_response = requests.post(
-            url=GROK_API_URL, headers=self.headers, data=body
+            url=self.grok_api_url, headers=self.headers, data=body
         )
         print(f"Relatório final recebido. Finalizando a requisição...")
         if final_response.status_code != 200:
@@ -80,14 +81,14 @@ class GrokReport:
                         },
                         {"role": "user", "content": f"{playbooks[playbook]}"},
                     ],
-                    "model": MODEL,
+                    "model": self.model,
                     "stream": False,
                     "temperature": 0,
                 }
             )
 
             response = requests.post(
-                url=GROK_API_URL, headers=self.headers, data=body
+                url=self.grok_api_url, headers=self.headers, data=body
             )
             print(f"Enviado o arquivo: {i}. Aguardando Resposta...")
             if response.status_code != 200:

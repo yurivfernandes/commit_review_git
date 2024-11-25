@@ -3,8 +3,6 @@ import sys
 import httpx
 import polars as pl
 
-from all_settings import GIT_LAB_HEADERS, GIT_LAB_URL
-
 
 class EspecificCommit:
     """Efetua a consulta na api do GITLab e retorna um relatório das modificações efetuadas."""
@@ -63,7 +61,7 @@ class EspecificCommit:
         }
 
         try:
-            response = httpx.get(self.url, headers=GIT_LAB_HEADERS)
+            response = httpx.get(self.url, headers=self.header)
 
             if response.status_code == 200:
                 data = response.json()
