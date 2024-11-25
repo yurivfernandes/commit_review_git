@@ -37,10 +37,9 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
         ).dataset
 
         if len(user_dataset) > 0:
-            user_options = user_dataset
             selected_user = st.selectbox(
                 "Selecione um usuário",
-                options=user_options,
+                options=user_dataset,
                 format_func=lambda x: x["name"],
             )
         else:
@@ -53,10 +52,9 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
         ).dataset
 
         if len(project_dataset) > 0:
-            project_options = project_dataset
             selected_project = st.selectbox(
                 "Selecione um projeto",
-                options=project_options,
+                options=project_dataset,
                 format_func=lambda x: x["name"],
             )
         else:
@@ -76,11 +74,10 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
                 project_id=project_id,
             ).dataset
 
-            if not commit_dataset.is_empty():
-                commit_options = commit_dataset.sort("id").to_dicts()
+            if len(commit_dataset) > 0:
                 selected_commit = st.selectbox(
                     "Selecione um commit",
-                    options=commit_options,
+                    options=commit_dataset,
                     format_func=lambda x: f'{x["title"]}',
                 )
             else:

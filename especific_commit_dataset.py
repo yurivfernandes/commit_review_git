@@ -1,7 +1,6 @@
 import sys
 
 import httpx
-import polars as pl
 
 
 class EspecificCommit:

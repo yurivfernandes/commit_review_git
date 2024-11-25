@@ -1,5 +1,4 @@
 import httpx
-import polars as pl
 
 
 class AllCommit:
@@ -20,8 +19,8 @@ class AllCommit:
             self.url = f"https://github{empresa_url}.com.br/api/v4/projects/{project_id}/repository/commits"
 
     @property
-    def dataset(self) -> pl.DataFrame:
-        """Retorna um dataset com a lista de commits do projeto filtrados pelo usuário"""
+    def dataset(self) -> dict:
+        """Retorna um dicionário com a lista de commits do projeto filtrados pelo usuário e ordenados por id"""
         try:
             response = httpx.get(
                 url=self.url,
@@ -31,7 +30,11 @@ class AllCommit:
 
             if response.status_code == 200:
                 commits = response.json()
-                return pl.DataFrame(commits).select(["id", "title"])
+                commits_list = [
+                    {"id": commit["id"], "title": commit["title"]}
+                    for commit in commits
+                ]
+                return sorted(commits_list, key=lambda x: x["id"])
             else:
                 raise ValueError(
                     f"Erro na requisição: {response.status_code} - {response.text}"
