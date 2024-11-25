@@ -1,5 +1,4 @@
 import httpx
-import polars as pl
 
 
 class AllUsers:
@@ -12,8 +11,8 @@ class AllUsers:
             self.url = f"https://github{empresa_url}.com.br/search/users"
 
     @property
-    def dataset(self) -> pl.DataFrame:
-        """Retorna um dataset com a lista de usuários ativos."""
+    def dataset(self) -> dict:
+        """Retorna um dicionário com a lista de usuários ativos."""
         try:
             response = httpx.get(
                 url=self.url,
@@ -22,7 +21,10 @@ class AllUsers:
             )
             if response.status_code == 200:
                 users = response.json()
-                return pl.DataFrame(users).select(["id", "name"]).sort("name")
+                # Seleciona apenas os campos 'id' e 'name' e retorna como lista de dicionários
+                return [
+                    {"id": user["id"], "name": user["name"]} for user in users
+                ]
             else:
                 raise ValueError(
                     f"Erro na requisição: {response.status_code} - {response.text}"

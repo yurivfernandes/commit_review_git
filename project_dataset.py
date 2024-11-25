@@ -1,5 +1,4 @@
 import httpx
-import polars as pl
 
 
 class ProjectDataset:
@@ -14,8 +13,8 @@ class ProjectDataset:
             self.url = f"https://github{empresa_url}.com.br/api/v4/projects?order_by=name&page="
 
     @property
-    def dataset(self) -> pl.DataFrame:
-        """Retorna um dataset com o nome e o ID dos projetos do GitLab"""
+    def dataset(self) -> dict:
+        """Retorna uma lista de dicionários com o nome e o ID dos projetos do GitLab"""
         all_projects = []
 
         try:
@@ -42,7 +41,7 @@ class ProjectDataset:
                         f"Erro na requisição: {response.status_code} - {response.text}"
                     )
 
-            return pl.DataFrame(data=all_projects).sort("name")
+            return all_projects
 
         except httpx.RequestError as e:
             raise ConnectionError(f"Erro na requisição HTTP: {e}")

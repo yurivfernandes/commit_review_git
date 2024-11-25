@@ -110,5 +110,5 @@ class GrokReport:
             git_token=self.git_token,
             empresa_url=self.empresa_url,
             plataforma=self.plataforma,
-        ).dataset.to_dicts()
+        ).dataset
         return {"playbook" + str(i + 1): file for i, file in enumerate(files)}

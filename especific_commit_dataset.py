@@ -23,56 +23,46 @@ class EspecificCommit:
             self.url = f"https://github{empresa_url}.com.br/api/v4/projects/{project_id}/repository/commits/{commit_id}/diff"
 
     @property
-    def dataset(self) -> pl.DataFrame:
+    def dataset(self) -> dict:
         """Extrai e transforma o dataset principal"""
-        return self._get_git_commits.with_columns(
-            pl.col("new_path").cast(pl.Utf8),
-            pl.struct(
-                [
-                    "new_path",
-                    "old_path",
-                    "is_new_file",
-                    "is_renamed_file",
-                    "is_deleted_file",
-                    pl.col("changes").str.replace_all(" ", ""),
-                ]
-            ).alias("info"),
-        ).drop(
-            [
-                "new_path",
-                "old_path",
-                "is_new_file",
-                "is_renamed_file",
-                "is_deleted_file",
-                "changes",
-            ]
-        )
+        return [
+            {
+                **commit,
+                "info": {
+                    "new_path": commit.get("new_path"),
+                    "old_path": commit.get("old_path"),
+                    "is_new_file": commit.get("new_file"),
+                    "is_renamed_file": commit.get("renamed_file"),
+                    "is_deleted_file": commit.get("deleted_file"),
+                    "changes": commit.get("diff", "").replace(" ", ""),
+                },
+            }
+            for commit in self._get_git_commits
+        ]
 
     @property
-    def _get_git_commits(self) -> pl.DataFrame:
+    def _get_git_commits(self) -> dict:
         """Busca os dados da API do Git Lab para efetuar os tratamentos necessários"""
-        schema = {
-            "diff": {"type": pl.Utf8, "rename": "changes"},
-            "old_path": {"type": pl.Utf8, "rename": "old_path"},
-            "new_path": {"type": pl.Utf8, "rename": "new_path"},
-            "new_file": {"type": pl.Boolean, "rename": "is_new_file"},
-            "renamed_file": {"type": pl.Boolean, "rename": "is_renamed_file"},
-            "deleted_file": {"type": pl.Boolean, "rename": "is_deleted_file"},
-        }
+        fields = [
+            "diff",
+            "old_path",
+            "new_path",
+            "new_file",
+            "renamed_file",
+            "deleted_file",
+        ]
 
         try:
             response = httpx.get(self.url, headers=self.header)
 
             if response.status_code == 200:
                 data = response.json()
-                columns = {key: field["type"] for key, field in schema.items()}
-                renamed_columns = {
-                    key: field["rename"] for key, field in schema.items()
-                }
+                for commit in data:
+                    for field in fields:
+                        if field in commit:
+                            commit[field] = commit.pop(field)
 
-                return pl.DataFrame(data, schema=columns).rename(
-                    renamed_columns
-                )
+                return data
             else:
                 print(f"Erro na requisição: {response.status_code}")
                 print(response.text)

@@ -36,8 +36,8 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
             git_token=git_token, plataforma=plataforma, empresa_url=empresa_url
         ).dataset
 
-        if not user_dataset.is_empty():
-            user_options = user_dataset.to_dicts()
+        if len(user_dataset) > 0:
+            user_options = user_dataset
             selected_user = st.selectbox(
                 "Selecione um usuário",
                 options=user_options,
@@ -47,14 +47,13 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
             st.warning("Nenhum usuário encontrado.")
             selected_user = None
 
-        # Carregar e selecionar o projeto
         st.markdown("### Selecione o Projeto")
         project_dataset = ProjectDataset(
             git_token=git_token, plataforma=plataforma, empresa_url=empresa_url
         ).dataset
 
-        if not project_dataset.is_empty():
-            project_options = project_dataset.to_dicts()
+        if len(project_dataset) > 0:
+            project_options = project_dataset
             selected_project = st.selectbox(
                 "Selecione um projeto",
                 options=project_options,
@@ -64,7 +63,6 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
             st.warning("Nenhum projeto encontrado.")
             selected_project = None
 
-        # Carregar e selecionar o commit
         st.markdown("### Selecione o Commit")
         if selected_project and selected_user:
             user_id = selected_user.get("id")
