@@ -17,8 +17,6 @@ Este projeto requer a instalação de algumas bibliotecas para funcionar correta
 
 ### Configurações necessárias:
 
-Abra o arquivo kens_and_tokens.py e adicione o seu token do Gitlab, o seu token do Grokapi e caso sua empresa tenha uma url personalizada, adicione o nome com um ponto antes. Caso não tenha, deixe vazio.
-
 ```bash
 pip install -r requirements.txt
 
