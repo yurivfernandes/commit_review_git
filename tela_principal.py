@@ -109,4 +109,5 @@ def render_dashboard(git_token, grok_api_key, empresa_url, plataforma):
             plataforma=plataforma,
             empresa_url=empresa_url,
         )._get_grok_data
+        print("Imprimindo o relatório na tela...")
         st.write(gpt_report)
