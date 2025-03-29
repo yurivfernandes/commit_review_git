@@ -1,20 +1,29 @@
 import httpx
+import streamlit as st
 
 
 class ProjectDataset:
-    """Classe para obter um dataset com o nome e o ID dos projetos do GitLab"""
+    """Classe para obter um dataset com o nome e o ID dos projetos do GitLab ou repositórios do GitHub"""
 
     def __init__(self, git_token: str, empresa_url: str, plataforma: str):
-        self.header = {"Private-Token": git_token}
+        self.header = (
+            {"Private-Token": git_token}
+            if plataforma == "GitLab"
+            else {"Authorization": f"token {git_token}"}
+        )
         self.url = ""
         if plataforma == "GitLab":
             self.url = f"https://gitlab{empresa_url}.com.br/api/v4/projects?order_by=name&page="
         else:
-            self.url = f"https://github{empresa_url}.com.br/api/v4/projects?order_by=name&page="
+            self.url = (
+                f"https://api.github.com/user/repos?per_page=100&page="
+                if not empresa_url
+                else f"https://api.github.com/orgs/{empresa_url}/repos?per_page=100&page="
+            )
 
     @property
     def dataset(self) -> dict:
-        """Retorna uma lista de dicionários com o nome e o ID dos projetos do GitLab"""
+        """Retorna uma lista de dicionários com o nome e o ID dos projetos do GitLab ou repositórios do GitHub"""
         all_projects = []
 
         try:
@@ -47,3 +56,8 @@ class ProjectDataset:
             raise ConnectionError(f"Erro na requisição HTTP: {e}")
         except Exception as e:
             raise RuntimeError(f"Erro desconhecido: {e}")
+
+
+# Adicionando um método para inicializar o estado da sessão
+if "pagina" not in st.session_state:
+    st.session_state["pagina"] = "tela_inicial"

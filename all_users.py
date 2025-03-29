@@ -1,30 +1,26 @@
 import httpx
 
-
 class AllUsers:
     def __init__(self, git_token: str, empresa_url: str, plataforma: str):
-        self.header = {"Private-Token": git_token}
-        self.url = ""
         if plataforma == "GitLab":
-            self.url = f"https://gitlab{empresa_url}.com.br/api/v4/users"
+            self.header = {"Private-Token": git_token}
+            self.url = f"https://gitlab.com/api/v4/users" if not empresa_url else f"https://gitlab.{empresa_url}.com.br/api/v4/users"
         else:
-            self.url = f"https://github{empresa_url}.com.br/search/users"
+            self.header = {"Authorization": f"token {git_token}"}
+            self.url = f"https://api.github.com/user" if not empresa_url else f"https://api.github.com/orgs/{empresa_url}/members"
 
     @property
     def dataset(self) -> dict:
-        """Retorna um dicionário com a lista de usuários ativos."""
+        """Retorna um dataset com a lista de usuários ativos."""
         try:
             response = httpx.get(
                 url=self.url,
                 headers=self.header,
                 params={"active": True, "per_page": 100},
             )
+
             if response.status_code == 200:
-                users = response.json()
-                # Seleciona apenas os campos 'id' e 'name' e retorna como lista de dicionários
-                return [
-                    {"id": user["id"], "name": user["name"]} for user in users
-                ]
+                return response.json()
             else:
                 raise ValueError(
                     f"Erro na requisição: {response.status_code} - {response.text}"
