@@ -6,12 +6,21 @@ from dotenv import load_dotenv
 from all_commit_dataset import AllCommit
 from all_users import AllUsers
 from chatgpt_report import ChatGPTReport
+from cloudflare_report import CloudFlareReport
 from project_dataset import ProjectDataset
 
 load_dotenv(".env")
 
 
-def render_dashboard(git_token, openai_api_key, empresa_url, plataforma):
+def render_dashboard(
+    git_token,
+    openai_api_key,
+    cloudflare_api_key,
+    cloudflare_account_id,
+    empresa_url,
+    plataforma,
+    llm_model,
+):
     logo_path = "vp6_logo.png"
 
     st.markdown(
@@ -34,6 +43,10 @@ def render_dashboard(git_token, openai_api_key, empresa_url, plataforma):
 
     with st.sidebar:
         st.markdown("## Menu")
+        st.markdown("---")
+
+        # Exibir o modelo LLM selecionado
+        st.markdown(f"### LLM Selecionado: {llm_model}")
         st.markdown("---")
 
         if plataforma == "GitLab":
@@ -138,6 +151,15 @@ def render_dashboard(git_token, openai_api_key, empresa_url, plataforma):
             )
             selected_commit = None
 
+        # Se for Llama 4, não precisamos mais da seleção do modelo específico
+        # pois sempre usaremos o modelo @cf/meta/llama-4-scout-17b-16e-instruct
+        if llm_model == "Llama 4":
+            st.markdown("### Modelo Llama Selecionado")
+            st.info("Usando @cf/meta/llama-4-scout-17b-16e-instruct")
+            llama_model = "@cf/meta/llama-4-scout-17b-16e-instruct"
+        else:
+            llama_model = ""
+
         st.markdown("### Insira a User Story")
         user_story = st.text_area("User Story", "", key="user_story")
         generate_report_button = st.button("Gerar Relatório")
@@ -154,27 +176,60 @@ def render_dashboard(git_token, openai_api_key, empresa_url, plataforma):
             if plataforma == "GitLab"
             else selected_commit.get("sha")
         )
-        gpt_report = ChatGPTReport(
-            user_story=user_story,
-            projeto_id=selected_project["id"]
-            if plataforma == "GitLab"
-            else selected_project["name"],
-            commit_id=commit_id,
-            plataforma=plataforma,
-            openai_api_key=openai_api_key,
-            git_token=git_token,
-            empresa_url=empresa_url,
-            owner=selected_user,
-        )._get_chatgpt_data
 
-        st.write("### Relatório Gerado:")
-        st.write(gpt_report)
+        project_id = (
+            selected_project["id"]
+            if plataforma == "GitLab"
+            else selected_project["name"]
+        )
+
+        if llm_model == "ChatGPT":
+            gpt_report = ChatGPTReport(
+                user_story=user_story,
+                projeto_id=project_id,
+                commit_id=commit_id,
+                plataforma=plataforma,
+                openai_api_key=openai_api_key,
+                git_token=git_token,
+                empresa_url=empresa_url,
+                owner=selected_user,
+            )._get_chatgpt_data
+
+            st.write("### Relatório Gerado pelo ChatGPT:")
+            st.write(gpt_report)
+        else:  # Llama 4
+            cloudflare_report = CloudFlareReport(
+                user_story=user_story,
+                projeto_id=project_id,
+                commit_id=commit_id,
+                plataforma=plataforma,
+                cloudflare_api_key=cloudflare_api_key,
+                cloudflare_account_id=cloudflare_account_id,
+                git_token=git_token,
+                empresa_url=empresa_url,
+                owner=selected_user,
+                # Não precisamos mais passar o modelo, pois a classe já usa o modelo fixo
+            ).get_report()
+
+            st.write("### Relatório Gerado pelo Llama 4:")
+            st.write(cloudflare_report)
 
 
 if __name__ == "__main__":
     git_token = st.session_state.get("GIT_TOKEN", "")
     openai_api_key = st.session_state.get("OPENAI_API_KEY", "")
+    cloudflare_api_key = st.session_state.get("CLOUDFLARE_API_KEY", "")
+    cloudflare_account_id = st.session_state.get("CLOUDFLARE_ACCOUNT_ID", "")
     empresa_url = st.session_state.get("EMPRESA_URL")
     plataforma = st.session_state.get("PLATAFORMA", "GitLab")
+    llm_model = st.session_state.get("LLM_MODEL", "ChatGPT")
 
-    render_dashboard(git_token, openai_api_key, empresa_url, plataforma)
+    render_dashboard(
+        git_token,
+        openai_api_key,
+        cloudflare_api_key,
+        cloudflare_account_id,
+        empresa_url,
+        plataforma,
+        llm_model,
+    )

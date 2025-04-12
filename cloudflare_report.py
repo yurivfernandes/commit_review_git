@@ -7,8 +7,8 @@ from especific_commit_dataset import EspecificCommit
 from playbooks import FINAL_PLAYBOOK, INITIAL_PLAYBOOK
 
 
-class ChatGPTReport:
-    """Classe para interagir com a API do ChatGPT da OpenAI."""
+class CloudFlareReport:
+    """Classe para interagir com a API do Cloudflare AI usando o modelo Llama 4."""
 
     def __init__(
         self,
@@ -17,9 +17,11 @@ class ChatGPTReport:
         commit_id: str,
         empresa_url: str,
         plataforma: str,
-        openai_api_key: str,
+        cloudflare_api_key: str,
+        cloudflare_account_id: str,
         git_token: str,
         owner: str,
+        model: str = None,  # Parâmetro opcional que não será utilizado
     ):
         self.user_story = user_story
         self.projeto_id = projeto_id
@@ -28,21 +30,22 @@ class ChatGPTReport:
         self.plataforma = plataforma
         self.git_token = git_token
         self.owner = owner
-        self.model = "gpt-3.5-turbo"
-        self.openai_api_url = "https://api.openai.com/v1/chat/completions"
+        # Sempre usar o modelo fixo, independente do que for passado
+        self.model = "@cf/meta/llama-4-scout-17b-16e-instruct"
+        self.cloudflare_api_url = f"https://api.cloudflare.com/client/v4/accounts/{cloudflare_account_id}/ai/run/{self.model}"
         self.headers = {
-            "Authorization": f"Bearer {openai_api_key}",
+            "Authorization": f"Bearer {cloudflare_api_key}",
             "Content-Type": "application/json",
         }
 
     def _make_request(self, body):
-        """Faz uma requisição à API do ChatGPT com lógica de retry para lidar com código de status HTTP 429."""
+        """Faz uma requisição à API do Cloudflare AI com lógica de retry para lidar com código de status HTTP 429."""
         max_retries = 5
         retry_delay = 1  # segundos
 
         for attempt in range(max_retries):
             response = requests.post(
-                url=self.openai_api_url, headers=self.headers, data=body
+                url=self.cloudflare_api_url, headers=self.headers, data=body
             )
             if response.status_code == 429:
                 print(
@@ -56,8 +59,8 @@ class ChatGPTReport:
         raise Exception("Max retries exceeded")
 
     @property
-    def _get_chatgpt_data(self) -> str:
-        """Busca os dados da API do ChatGPT para efetuar os tratamentos necessários."""
+    def _get_deepseek_data(self) -> str:
+        """Busca os dados da API do Cloudflare para efetuar os tratamentos necessários."""
         print("Iniciado...")
         body = json.dumps(
             {
@@ -71,7 +74,6 @@ class ChatGPTReport:
                         "content": f"{self._code_analysis_response}",
                     },
                 ],
-                "model": self.model,
                 "temperature": 0,
             }
         )
@@ -82,7 +84,8 @@ class ChatGPTReport:
         if final_response.status_code != 200:
             return "Resposta vazia."
 
-        return final_response.json().get("choices")[0]["message"]["content"]
+        # O formato de resposta do Cloudflare pode ser diferente, ajuste conforme necessário
+        return final_response.json().get("result", {}).get("response", "")
 
     @property
     def _code_analysis_response(self) -> list:
@@ -101,7 +104,6 @@ class ChatGPTReport:
                         },
                         {"role": "user", "content": f"{playbooks[playbook]}"},
                     ],
-                    "model": self.model,
                     "temperature": 0,
                 }
             )
@@ -112,8 +114,9 @@ class ChatGPTReport:
             if response.status_code != 200:
                 break
 
+            # Adaptação para o formato de resposta do Cloudflare
             code_analysis_response.append(
-                response.json().get("choices")[0]["message"]["content"]
+                response.json().get("result", {}).get("response", "")
             )
             print(f"Resposta do arquivo {i} recebida...")
             i = i + 1
@@ -121,7 +124,7 @@ class ChatGPTReport:
 
     @property
     def _playbook_dataset(self) -> dict:
-        """Método que monta o Playbook para enviar ao ChatGPT."""
+        """Método que monta o Playbook para enviar ao DeepSeek."""
         files = EspecificCommit(
             commit_id=self.commit_id,
             project_id=self.projeto_id,
@@ -134,4 +137,4 @@ class ChatGPTReport:
 
     def get_report(self) -> str:
         """Método público para obter o relatório completo."""
-        return self._get_chatgpt_data
+        return self._get_deepseek_data
